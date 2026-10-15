@@ -7,7 +7,7 @@ if (!process.env.MONGODBURL) {
 if (!process.env.JWT_ACCESS_SECRET) {
     throw new Error("JWT access Secret is never defined in the environment variable");
 }
-if (!process.env.JWT_REFESH_SECRET) {
+if (!process.env.JWT_REFRESH_SECRET) {
     throw new Error("JWT Refresh Secret is never defined in the environment variable");
 }
 if (!process.env.PORT) {
@@ -24,7 +24,7 @@ const configData = {
     MONGODB_URL: process.env.MONGODBURL,
     PORT: process.env.PORT,
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
-    JWT_REFESH_SECRET: process.env.JWT_REFESH_SECRET,
+    JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
     FRONTEND_URL: process.env.FRONTEND_URL,
     NODE_ENV: process.env.NODE_ENV
 }

@@ -240,8 +240,9 @@ export default function SignupPage() {
                             />
                         </div>
 
-                        <button type="submit" className={styles.submitButton}>
+                        <button type="submit" className={styles.submitButton}><Link href='/profile'>
                             Create account <span>→</span>
+                        </Link>
                         </button>
 
                         <p className={styles.terms}>

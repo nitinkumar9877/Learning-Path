@@ -5,8 +5,10 @@ import Link from 'next/link';
 import styles from "../../../stylesSheets/login.module.css";
 import { UserLogin, UserRegister } from "../../../services/AuthUser.js"
 import axios from 'axios';
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -42,15 +44,22 @@ export default function LoginPage() {
       password: loginUser.password,
     });
 
-    const APIURL = `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_AUTH_ROUTE}login-user`
+    const APIURL = `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_AUTH_ROUTE}login-user`;
     // http://localhost:5555/api/auth/login-page  backend api
-    // http://localhost:5555/api/auth/login-user
     console.log("This is my url for fetching data : ", APIURL)
 
     // Next step: connect your register API here.
     try {
       const response = await UserLogin(APIURL, loginUser);
-      alert("user Login successfully")
+
+      const accessToken = response.data.accessToken;
+      // alert("user Login successfully")
+      // router.push("/profile");
+      if (!accessToken) {
+        throw new Error("Access token was not returned by the server");
+      }
+      sessionStorage.setItem("accessToken", accessToken);
+      router.push("/profile");
     } catch (error) {
       console.error('Error fetching employees:', error);
     } finally {
@@ -166,6 +175,10 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+            {/* 
+            <button type="submit" className={styles.submitButton}>
+              Create account <span>→</span>
+            </button> */}
 
             <button type="submit" className={styles.submitButton}>
               Create account <span>→</span>
