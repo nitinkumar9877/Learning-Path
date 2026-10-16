@@ -36,3 +36,21 @@ export const UserProfile = async (APIURL, accessTokenObject) => {
     throw err;
   }
 }
+
+export const AccessTokenFromRrfreshToken = async (COOKIESURL, refreshToken) => {
+  console.log("Refresh Page URL :", COOKIESURL);
+  console.log("Refresh Token Object :", refreshToken);
+  try {
+    const response = await axios.post(COOKIESURL, {}, { withCredentials: true, 
+      headers:{
+        Authorization: `Bearer ${refreshToken}`
+      }
+     });
+    // http://localhost:5555/api/auth/refresh-token public API
+    return response;
+  } catch (error) {
+    console.log("status:", error.response?.status);
+    console.log("Error Details :", error.response?.data);
+    throw error;
+  }
+}

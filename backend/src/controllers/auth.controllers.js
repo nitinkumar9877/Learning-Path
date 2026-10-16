@@ -97,7 +97,7 @@ const registerUser = async (req, res) => {
 // const loginUser = async (req, res) => {
 //     try {
 //         const { email, password } = req.body;
-        
+
 //         if (!email || !password) {
 //             return res.status(400).json({
 //                 message: "All fields are required"
@@ -238,7 +238,6 @@ const loginUser = async (req, res) => {
     });
 }
 
-
 const getDataFromAccessToken = async (req, res) => {
     try {
         const user = req.user;
@@ -263,52 +262,90 @@ const getDataFromAccessToken = async (req, res) => {
     }
 }
 
-
 const refreshAccessToken = async (req, res) => {
     try {
-        const refreshToken = req.cookies?.refreshToken;
+        console.log("First");
 
-        // Step 1: Check whether the cookie exists.
-        if (!refreshToken) {
+        const refreshTokenBody = req.headers.authorization;
+        if (!refreshTokenBody || !refreshTokenBody.startsWith("Bearer ")) {
             return res.status(401).json({
-                message: "Refresh token not found. Please log in."
+                message: "In URL Header we don't able to find Authorization. Please log in."
             });
         }
+        console.log("refreshTokenBody :", refreshTokenBody);
+        const refreshToken = refreshTokenBody.split(" ")[1];
+        if (!refreshToken) {
+            res.status(401).json({
+                message: "Refresh Token is Missing"
+            })
+        }
+        console.log("third");
 
-        // Step 2: Verify the refresh token.
         let decoded;
-
         try {
             decoded = jwt.verify(
                 refreshToken,
                 configData.JWT_REFRESH_SECRET
             );
+            console.log("4th try");
+
         } catch (error) {
+            console.log("4th catch 1st");
+
             res.clearCookie("refreshToken", {
-                httpOnly: true,
+                httpOnly: false,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "lax",
                 path: "/"
             });
+            console.log("4th catch 2st");
 
             return res.status(401).json({
                 message: "Refresh token is invalid or expired."
             });
         }
+        console.log("5th");
 
-        // Step 3: Generate a new access token.
         const accessToken = jwt.sign(
             { id: decoded.id },
             configData.JWT_ACCESS_SECRET,
             { expiresIn: "15m" }
         );
+        console.log("6th");
 
-        // Step 4: Send the new access token.
-        return res.status(200).json({
-            message: "Access token generated successfully",
-            accessToken
+        const newRefreshToken = jwt.sign(
+            { id: decoded.id },
+            configData.JWT_REFRESH_SECRET,
+            { expiresIn: "7d" }
+        )
+        console.log("7th");
+
+        const isProduction = configData.NODE_ENV === "production";
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: false,
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: "/"
         });
-
+        console.log("8th")
+        res.cookie("accessToken", accessToken, {
+            httpOnly: false,
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
+            maxAge: 15 * 60 * 1000,
+            path: "/"
+        });
+        console.log("9th");
+        console.log("this is the decoded data :", decoded);
+        res.status(200).json({
+            message: "The user is already Login. We redirect you to the page",
+            'New Access Token': accessToken,
+            'New Refresh Token': newRefreshToken,
+            user: decoded
+        })
+        console.log("last step for refresh token from backend");
+        console.log("Refresh token run successFully");
     } catch (error) {
         console.error("Refresh token error:", error.message);
 
@@ -318,5 +355,29 @@ const refreshAccessToken = async (req, res) => {
     }
 };
 
+const logoutProfile = async (req, res) => {
+    // try {
+    //     res.clearCookie("refreshToken", {
+    //         httpOnly: false,
+    //         secure: configData.NODE_ENV === "production",
+    //         sameSite: "lax",
+    //         path: "/",
+    //     })
+    //     res.clearCookie("accessToken", {
+    //         httpOnly: false,
+    //         secure: configData.NODE_ENV === "production",
+    //         sameSite: "lax",
+    //         path: '/'
+    //     })
+    //     res.status(200).json({
+    //         message: "The user logout successfully"
+    //     })
+    // } catch (error) {
+    //     res.status(400).json({
+    //         message: "Bad req",
+    //         error: error
+    //     })
+    // }
+}
 
-module.exports = { registerUser, loginUser, getDataFromAccessToken, refreshAccessToken};
+module.exports = { registerUser, loginUser, getDataFromAccessToken, refreshAccessToken, logoutProfile };

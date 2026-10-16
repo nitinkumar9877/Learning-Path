@@ -44,120 +44,119 @@ const loginValidation = (req, res, next) => {
     next();
 };
 
+// const tokenValidation = async (req, res, next) => {
+//     try {
+//         // console.log(req.headers,"This is request")
+//         const tokenBody = req.headers.authorization;
+
+//         if (!tokenBody || !tokenBody.startsWith("Bearer ")) {
+//             console.log("Token body")
+//             return res.status(401).json({ message: "Tokenbody is not found" });
+//         }
+
+//         const token = tokenBody?.split(" ")[1];
+//         if (!token) {
+//             console.log("Toke")
+//             return res.status(401).json({ message: "Token value not found" })
+//         };
+//         console.log("Upper")
+//         console.log("token value : ", token)
+//         console.log("JWT SECRET value : ", configData.JWT_ACCESS_SECRET); 
+
+//         let decoded;
+ 
+//         try {
+//             decoded = jwt.verify(token, configData.JWT_ACCESS_SECRET);
+//             console.log("Token verified successfully:", decoded);
+//         } catch (err) {
+//             console.error("JWT verification error:", err.name);
+//             console.error("JWT verification message:", err.message);
+
+//             return res.status(400).json({
+//                 message: "Token verification failed",
+//                 error: err.message
+//             });
+//         }
+
+//         console.log("Lower")
+//         console.log("This is the token :", decoded);
+//         const user = await registerDataModel.findById(decoded.id)
+//         if (!user) {
+//             console.log("user")
+//             return res.status(400).json({ message: "This token is invalid" })
+//         }
+//         // const accessToken = jwt.sign({user.data.id},configData.JWT_REFRESH_SECRET,{expiresIn:'7d'});
+//         // const refreshToken = jwt.sign({user.data.id},configData.JWT_REFRESH_SECRET,{expiresIn:'7d'});
+
+//         req.user = user;
+//         next();
+//     }
+//     catch (err) {
+//         console.error("Middleware error:", err.name, err.message);
+//         return res.status(400).json({
+//             message: "Invalid or expire token",
+//             'err.name': err.name,
+//             'err.message': err.message
+//         })
+//     }
+// }
+
 const tokenValidation = async (req, res, next) => {
     try {
-        // console.log(req.headers,"This is request")
         const tokenBody = req.headers.authorization;
 
+        // 1. Authorization header is missing or malformed
         if (!tokenBody || !tokenBody.startsWith("Bearer ")) {
-            console.log("Token body")
-            return res.status(401).json({ message: "Tokenbody is not found" });
-        }
-
-        const token = tokenBody?.split(" ")[1];
-        if (!token) {
-            console.log("Toke")
-            return res.status(401).json({ message: "Token value not found" })
-        };
-        console.log("Upper")
-        console.log("token value : ", token)
-        console.log("JWT SECRET value : ", configData.JWT_ACCESS_SECRET); 
-
-        let decoded;
-
-        try {
-            decoded = jwt.verify(token, configData.JWT_ACCESS_SECRET);
-            console.log("Token verified successfully:", decoded);
-        } catch (err) {
-            console.error("JWT verification error:", err.name);
-            console.error("JWT verification message:", err.message);
-
-            return res.status(400).json({
-                message: "Token verification failed",
-                error: err.message
+            return res.status(401).json({
+                message: "Authorization token is missing"
             });
         }
 
-        console.log("Lower")
-        console.log("This is the token :", decoded);
-        const user = await registerDataModel.findById(decoded.id)
-        if (!user) {
-            console.log("user")
+        const token = tokenBody.split(" ")[1];
 
-            return res.status(400).json({ message: "This token is invalid" })
+        // 2. Token value is missing
+        if (!token) {
+            return res.status(401).json({
+                message: "Token value is missing"
+            });
         }
-        const accessToken = jwt.sign({user.data.id},configData.JWT_REFRESH_SECRET,{expiresIn:'7d'});
-        const refreshToken = jwt.sign({user.data.id},configData.JWT_REFRESH_SECRET,{expiresIn:'7d'});
 
+        let decoded;
+
+        // 3. Verify JWT token
+        try {
+            decoded = jwt.verify(
+                token,
+                configData.JWT_ACCESS_SECRET
+            );
+        } catch (err) {
+            return res.status(401).json({
+                message: "Invalid or expired token"
+            });
+        }
+
+        // 4. Find user in database
+        const user = await registerDataModel.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({
+                message: "User associated with token not found"
+            });
+        }
+
+        // 5. Authentication successful
         req.user = user;
         next();
+
+    } catch (err) {
+        // 6. Unexpected server/database error
+        console.error("Middleware error:", err);
+
+        return res.status(500).json({
+            message: "Internal server error"
+        });
     }
-    catch (err) {
-        console.error("Middleware error:", err.name, err.message);
-        return res.status(400).json({
-            message: "Invalid or expire token",
-            'err.name': err.name,
-            'err.message': err.message
-        })
-    }
-}
-
-// const tokenValidation = async (req, res, next) => {
-//     try {
-//         const tokenBody = req.headers.authorization;
-
-//         // 1. Authorization header is missing or malformed
-//         if (!tokenBody || !tokenBody.startsWith("Bearer ")) {
-//             return res.status(401).json({
-//                 message: "Authorization token is missing"
-//             });
-//         }
-
-//         const token = tokenBody.split(" ")[1];
-
-//         // 2. Token value is missing
-//         if (!token) {
-//             return res.status(401).json({
-//                 message: "Token value is missing"
-//             });
-//         }
-
-//         let decoded;
-
-//         // 3. Verify JWT token
-//         try {
-//             decoded = jwt.verify(
-//                 token,
-//                 configData.JWT_ACCESS_SECRET
-//             );
-//         } catch (err) {
-//             return res.status(401).json({
-//                 message: "Invalid or expired token"
-//             });
-//         }
-
-//         // 4. Find user in database
-//         const user = await registerDataModel.findById(decoded.id);
-
-//         if (!user) {
-//             return res.status(401).json({
-//                 message: "User associated with token not found"
-//             });
-//         }
-
-//         // 5. Authentication successful
-//         req.user = user;
-//         next();
-
-//     } catch (err) {
-//         // 6. Unexpected server/database error
-//         console.error("Middleware error:", err);
-
-//         return res.status(500).json({
-//             message: "Internal server error"
-//         });
-//     }
-// };
+};
 
 
 module.exports = { registerValidation, loginValidation, tokenValidation };

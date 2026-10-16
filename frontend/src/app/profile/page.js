@@ -3,21 +3,29 @@ import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import styles from "../../stylesSheets/profile.module.css";
 import { UserProfile } from "@/services/AuthUser";
+import GenAccessTokenFromRrfreshToeken from "@/components/GenAccessTokenFromRrfreshToeken";
+import { useRouter } from "next/navigation";
 
 const ProfilePage = () => {
     const [userData, setuserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const router = useRouter();
+    // const [reRener, setreRender] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const accessToken = Cookies.get("accessToken");
+                let accessToken = Cookies.get("accessToken");
 
                 console.log("Access token:", accessToken);
                 if (!accessToken) {
-                    setError("Access token not found. Please log in.");
-                    return;
+                    const responseUser = await GenAccessTokenFromRrfreshToeken();
+                    if(!responseUser){
+                        router.replace("/login");
+                        return;
+                    }
+                    accessToken = Cookies.get("accessToken")                    
                 }
 
                 const APIURL = `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_AUTH_ROUTE}profile`;
@@ -28,9 +36,7 @@ const ProfilePage = () => {
                 };
                 const responseData = await UserProfile(APIURL, config);
                 const user = responseData.data.userData;
-
                 console.log("Fetched profile:", user);
-
                 setuserData({
                     id: user.id,
                     name: user.name,
@@ -54,6 +60,9 @@ const ProfilePage = () => {
         fetchProfile();
     }, []);
 
+    const logOutProfile = ()=>{
+        Cookies.setValue("")
+    }
     if (loading) {
         return <div className={styles.profilePage}>Loading profile...</div>;
     }
@@ -72,6 +81,7 @@ const ProfilePage = () => {
                     <p><strong>Username:</strong> {userData.username}</p>
                     <p><strong>Email:</strong> {userData.email}</p>
                     <p><strong>Phone:</strong> {userData.phonenum}</p>
+                    <button onClick={logOutProfile}>Logout The profile</button>
                 </div>
             )}
         </div>

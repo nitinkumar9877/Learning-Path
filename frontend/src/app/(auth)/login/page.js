@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from "../../../stylesSheets/login.module.css";
-import { UserLogin, UserRegister } from "../../../services/AuthUser.js"
+import { AccessTokenFromRrfreshToeken, UserLogin, UserRegister } from "../../../services/AuthUser.js"
 import axios from 'axios';
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import GenAccessTokenFromRrfreshToeken from '@/components/GenAccessTokenFromRrfreshToeken';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +18,16 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const myFun = async ()=>{
+      const response = await GenAccessTokenFromRrfreshToeken();
+      if(response){
+        router.replace("/profile")
+      }
+    }
+    myFun()
+  }, []);
 
   if (loading) {
     return <>The Data have to check...</>
@@ -58,7 +70,7 @@ export default function LoginPage() {
       if (!accessToken) {
         throw new Error("Access token was not returned by the server");
       }
-      sessionStorage.setItem("accessToken", accessToken);
+      // sessionStorage.setItem("accessToken", accessToken);
       router.push("/profile");
     } catch (error) {
       console.error('Error fetching employees:', error);
