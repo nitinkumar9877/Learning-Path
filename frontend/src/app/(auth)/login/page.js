@@ -22,6 +22,7 @@ export default function LoginPage() {
   useEffect(() => {
     const myFun = async ()=>{
       const response = await GenAccessTokenFromRrfreshToeken();
+      console.log("i got response :",response)
       if(response){
         router.replace("/profile")
       }
@@ -203,6 +204,9 @@ export default function LoginPage() {
             </p>
           </form>
 
+          <div className={styles.loginPrompt}>
+            Create your new account? <Link href="/forget-password">Forget Your Password</Link>
+          </div>
           <div className={styles.loginPrompt}>
             Create your new account? <Link href="/register">Resgister a user</Link>
           </div>

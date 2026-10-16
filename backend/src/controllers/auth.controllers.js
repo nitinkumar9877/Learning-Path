@@ -1,9 +1,11 @@
 const express = require('express');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const sessionModel = require("../models/session.model.js")
+const sessionModel = require("../models/session.model.js");
 const configData = require("../config/config.js");
 const registerDataModel = require("../models/data.model.js");
+const nodemailer = require("nodemailer");
+const otpModel = require("../models/otp.model.js")
 
 const app = express();
 
@@ -51,12 +53,12 @@ const registerUser = async (req, res) => {
 
     const hashRefreshToken = await bcrypt.hash(refreshToken, 12);
 
-    const session = await sessionModel.create({
-        user: user._id,
-        ip: req.ip,
-        userAgent: req.headers["user-agent"],
-        refreshTokenHash: hashRefreshToken
-    });
+    // const session = await sessionModel.create({
+    //     user: user._id,
+    //     ip: req.ip,
+    //     userAgent: req.headers["user-agent"],
+    //     refreshTokenHash: hashRefreshToken
+    // });
 
     // res.cookie("refreshToken", refreshToken, {
     //     httpOnly: true,  // it mean it will never access by the js which run in the client side so our cookies data is safe now,
@@ -93,63 +95,6 @@ const registerUser = async (req, res) => {
         }
     });
 }
-
-// const loginUser = async (req, res) => {
-//     try {
-//         const { email, password } = req.body;
-
-//         if (!email || !password) {
-//             return res.status(400).json({
-//                 message: "All fields are required"
-//             });
-//         }
-
-//         // Cleaned up the redundant $or query syntax
-//         const user = await registerDataModel.findOne({ email });
-//         if (!user) {
-//             return res.status(403).json({
-//                 message: "The email is wrong please enter the correct details",
-//                 success: false
-//             });
-//         }
-
-//         const isPasswordRight = await bcrypt.compare(password, user.password);
-//         if (!isPasswordRight) {
-//             return res.status(403).json({
-//                 message: "The Password is wrong please enter the correct password",
-//                 success: false
-//             });
-//         }
-
-//         // Generating tokens using your secret configurations
-//         const accessToken = jwt.sign(
-//             { id: user._id.toString() }, 
-//             configData.JWT_ACCESS_SECRET, 
-//             { expiresIn: "15m" }
-//         );
-
-//         const refreshToken = jwt.sign(
-//             { id: user._id.toString() }, 
-//             configData.JWT_REFRESH_SECRET, 
-//             { expiresIn: "7d" }
-//         );
-
-//         // All cookie logic removed to adhere strictly to your header-based auth flow
-//         return res.status(200).json({
-//             success: true,
-//             message: "User logged in successfully",
-//             accessToken: accessToken,
-//             refreshToken: refreshToken
-//         });
-
-//     } catch (err) {
-//         console.error("Login Controller Error:", err.message);
-//         return res.status(500).json({
-//             success: false,
-//             message: "An internal server error occurred during login."
-//         });
-//     }
-// };
 
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
@@ -356,28 +301,139 @@ const refreshAccessToken = async (req, res) => {
 };
 
 const logoutProfile = async (req, res) => {
-    // try {
-    //     res.clearCookie("refreshToken", {
-    //         httpOnly: false,
-    //         secure: configData.NODE_ENV === "production",
-    //         sameSite: "lax",
-    //         path: "/",
-    //     })
-    //     res.clearCookie("accessToken", {
-    //         httpOnly: false,
-    //         secure: configData.NODE_ENV === "production",
-    //         sameSite: "lax",
-    //         path: '/'
-    //     })
-    //     res.status(200).json({
-    //         message: "The user logout successfully"
-    //     })
-    // } catch (error) {
-    //     res.status(400).json({
-    //         message: "Bad req",
-    //         error: error
-    //     })
-    // }
+    try {
+        res.clearCookie("refreshToken", {
+            httpOnly: false,
+            secure: configData.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+        })
+        res.clearCookie("accessToken", {
+            httpOnly: false,
+            secure: configData.NODE_ENV === "production",
+            sameSite: "lax",
+            path: '/'
+        })
+        res.status(200).json({
+            message: "The user logout successfully"
+        })
+    } catch (error) {
+        res.status(400).json({
+            message: "Bad req",
+            error: error
+        })
+    }
 }
 
-module.exports = { registerUser, loginUser, getDataFromAccessToken, refreshAccessToken, logoutProfile };
+const deleteUserProfile = async (req, res) => {
+    try {
+        const tokenBody = req?.headers?.authorization;
+        // if(!tokenBody || tokenBody.startsWith("Bearer ")){
+        //     return res.status(400).json({
+        //         message:"Token is not defined in headers"
+        //     })
+        // }
+        if (!tokenBody || !tokenBody.startsWith("Bearer ")) {
+            return res.status(401).json({
+                message: "Authorization token is missing"
+            });
+        }
+        console.log("These token body is use for delete the profile :", tokenBody);
+        const token = tokenBody?.split(" ")[1];
+        console.log("These token is use for delete the profile :", token);
+        const decoded = jwt.verify(token, configData.JWT_ACCESS_SECRET);
+        console.log(decoded);
+        console.log(decoded.id);
+        //findByIdAndDelete
+
+        const response = await registerDataModel.findByIdAndDelete(decoded.id);
+        if (!response) {
+            return res.status(404).json({ message: "The user can't be find" });
+        }
+        console.log(response);
+
+        const isProduction = configData.NODE_ENV === "production";
+        console.log("1");
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
+            path: "/",
+        };
+        console.log("2");
+
+
+        res.clearCookie("accessToken", cookieOptions);
+        console.log("3");
+
+        res.clearCookie("refreshToken", cookieOptions);
+        console.log("4");
+        res.status(200).json({ message: "The user delete his file successfully" });
+    } catch (error) {
+        console.error("Delete profile error:", error.message);
+
+        if (
+            error.name === "JsonWebTokenError" ||
+            error.name === "TokenExpiredError"
+        ) {
+            return res.status(401).json({
+                message: "Invalid or expired access token",
+            });
+        }
+
+        return res.status(500).json({
+            message: "Internal server error",
+        });
+    }
+}
+
+const generateOtp = async (req, res) => {
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: configData.EMAIL,
+            pass: configData.PASSWORD
+        }
+    })
+
+    const otpGeneraterMath = () => {
+        return Math.floor(100000 + Math.random() * 900000).toString()
+    };
+
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+    const code = otpGeneraterMath();
+    const expireAt = new Date(Date.now() + 5 * 60 * 1000) // 5 min
+    await otpModel.deleteMany({ email: email });
+
+    const otpDoc = new otpModel({ email, code, expireAt });
+    await otpDoc.save();
+
+
+    // send to email
+    const mailOption = {
+        from: configData.EMAIL,
+        to: email,
+        subject: "This is your otp code",
+        text: `ytCommerce Security Alreat. your OTP is ${code}`
+    }
+
+    try {
+        await transporter.sendMail(mailOption);
+        res.json({
+            success:true,
+            message: "Otp send successfully"
+        })
+
+    } catch (err) {
+        res.send({
+            message: 'otp never send',
+            error: err
+        })
+    }
+}
+
+module.exports = { registerUser, loginUser, getDataFromAccessToken, refreshAccessToken, logoutProfile, deleteUserProfile, generateOtp };

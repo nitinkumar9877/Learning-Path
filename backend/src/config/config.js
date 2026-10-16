@@ -19,6 +19,12 @@ if (!process.env.FRONTEND_URL) {
 if (!process.env.NODE_ENV) {
     throw new Error("NODE ENV is never defined in the environment varibale");
 }
+if (!process.env.EMAIL) {
+    throw new Error("EMAIL for otp auth is never defined in the environment varibale");
+}
+if (!process.env.PASSWORD) {
+    throw new Error("Password for otp auth is never defined in the environment varibale");
+}
 
 const configData = {
     MONGODB_URL: process.env.MONGODBURL,
@@ -26,7 +32,9 @@ const configData = {
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
     FRONTEND_URL: process.env.FRONTEND_URL,
-    NODE_ENV: process.env.NODE_ENV
+    NODE_ENV: process.env.NODE_ENV,
+    EMAIL : process.env.EMAIL,
+    PASSWORD : process.env.PASSWORD
 }
 
 module.exports = configData;

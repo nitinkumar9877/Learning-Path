@@ -160,3 +160,13 @@ const tokenValidation = async (req, res, next) => {
 
 
 module.exports = { registerValidation, loginValidation, tokenValidation };
+
+
+// MONGODBURL = mongodb+srv://promaticsnitinkumar1_db_user:3qfJyo5KvJwapjbS@cluster0.spinr0e.mongodb.net/auth-learn
+// JWT_ACCESS_SECRET = mJiIOUDJF4u9T9iHbN9mke4hyDlEC5ZN7wuITiRUQKt
+// JWT_REFRESH_SECRET = 6MazXIpa1LawxJTlFoPF95oEg2gJ6m3laSNNnZYaFHe
+// PORT = 5555
+// FRONTEND_URL = http://localhost:3000
+// NODE_ENV = development
+// EMAIL = promatics.nitinkumar1@gmail.com
+// PASSWORD = wnzuoiqlpwiksrhm

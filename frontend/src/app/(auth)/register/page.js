@@ -5,9 +5,10 @@ import Link from 'next/link';
 import styles from "../../../stylesSheets/register.module.css";
 import { UserRegister } from "../../../services/AuthUser.js"
 import axios from 'axios';
-
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
+    const router = useRouter();
     const [formData, setFormData] = useState({
         name: '',
         username: '',
@@ -66,6 +67,7 @@ export default function SignupPage() {
         try {
             const response = await UserRegister(APIURL, registerUser);
             alert("user create successfully")
+            router.replace('/profile')
         } catch (error) {
             console.error('Error fetching employees:', error);
         } finally {
