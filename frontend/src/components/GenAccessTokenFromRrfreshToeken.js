@@ -14,13 +14,6 @@ const GenAccessTokenFromRrfreshToeken = async () => {
         console.log("This is my refresh cookies", refreshToken);
         console.log("This is my Cookies URL :", COOKIESURL);
 
-        // http://localhost:5555/api/auth/refresh-token public API
-        // const config = {
-        //   headers: {
-        //     Authorization: `Bearer ${refreshToken}`,
-        //   },
-        // };
-        // console.log("refresh-token object is :", config);
         console.log("4");
         const responseData = await AccessTokenFromRrfreshToken(COOKIESURL, refreshToken)
         console.log("5 first");

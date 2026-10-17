@@ -136,30 +136,6 @@ const loginUser = async (req, res) => {
         expiresIn: "7d"
     })
 
-    // const session = await sessionModel.create({
-    //     user: user._id,
-    //     ip: req.ip,
-    //     userAgent: req.headers["user-agent"],
-    //     refreshTokenHash: refreshToken
-    // });
-
-    // res.cookie("refreshToken", refreshToken, {
-    //     http://localhost:3000/loginhttp://localhost:3000/login: true,  // it mean it will never access by the js which run in the client side so our cookies data is safe now,
-    //     secure: true,   // nobody can asscess the page 
-    //     sameSite: "None",
-    //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    //     path : '/'
-    // })
-
-    // res.cookie("accessToken", refreshToken, {
-    //     httpOnly: true,  // it mean it will never access by the js which run in the client side so our cookies data is safe now,
-    //     secure: true,   // nobody can asscess the page 
-    //     sameSite: "None",
-    //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    //     path : '/'
-    // })
-
-
     const isProduction = configData.NODE_ENV === "production";
 
     res.cookie("refreshToken", refreshToken, {
@@ -169,6 +145,7 @@ const loginUser = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/"
     });
+    
     res.cookie("accessToken", accessToken, {
         httpOnly: false,
         secure: isProduction,
@@ -179,7 +156,7 @@ const loginUser = async (req, res) => {
 
     res.status(201).json({
         message: "user Login Successfully",
-        accessToken: accessToken
+        accessToken:accessToken
     });
 }
 
@@ -406,12 +383,17 @@ const generateOtp = async (req, res) => {
         return res.status(400).json({ error: "Email is required" });
     }
     const code = otpGeneraterMath();
+    const otp = await bcrypt.hash(code, 12);
     const expireAt = new Date(Date.now() + 5 * 60 * 1000) // 5 min
     await otpModel.deleteMany({ email: email });
+    console.log("OTP CODE :", otp);
+    console.log("OTP NORMAL CODE :", code);
+    console.log("OTP CODE :", typeof otp);
+    console.log("email for CODE :", email);
+    console.log("expireAt for CODE :", expireAt);
 
-    const otpDoc = new otpModel({ email, code, expireAt });
+    const otpDoc = new otpModel({ email, otp, expireAt });
     await otpDoc.save();
-
 
     // send to email
     const mailOption = {
@@ -422,9 +404,10 @@ const generateOtp = async (req, res) => {
     }
 
     try {
-        await transporter.sendMail(mailOption);
+        const response = await transporter.sendMail(mailOption);
+        console.log("These is the response by the otp server :", response)
         res.json({
-            success:true,
+            success: true,
             message: "Otp send successfully"
         })
 
@@ -436,4 +419,86 @@ const generateOtp = async (req, res) => {
     }
 }
 
-module.exports = { registerUser, loginUser, getDataFromAccessToken, refreshAccessToken, logoutProfile, deleteUserProfile, generateOtp };
+const VerifyOtp = async (req, res) => {
+    const { otp, email } = req.body;
+    if (!otp || !email) {
+        return res.status(400).json({
+            success: false,
+            message: !otp
+                ? "OTP is required"
+                : "Email is required",
+        });
+    }
+    try {
+        const user = await otpModel.findOne({ email });
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email or OTP expired",
+            });
+        }
+        const isOtpValid = await bcrypt.compare(
+            String(otp),
+            user.otp
+        );
+        if (!isOtpValid) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid OTP. Please try again.",
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "OTP verified successfully",
+        });
+    } catch (error) {
+        console.error("OTP verification error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong. Please try again.",
+        });
+    }
+};
+
+const NewPassword = async (req, res) => {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+        res.status(400).json({ message: "Data is missing in req body" });
+        return
+    }
+    try {
+        const user = await registerDataModel.findOne({ email })
+        if (!user) {
+            res.status(404).json({
+                message: "User not found please first do signup"
+            })
+            return;
+        }
+        const isSamePassword = await bcrypt.compare(
+            newPassword,
+            user.password
+        );
+
+        if (isSamePassword) {
+            return res.status(400).json({
+                success: false,
+                message: "New password must be different from your current password"
+            });
+        }
+        const hashPassword = await bcrypt.hash(newPassword, 12)
+        user.password = hashPassword;
+        await user.save();
+        res.status(200).json({
+            message: "The user change the password successfully"
+        })
+    } catch (err) {
+        console.log("we are facing an error");
+        res.status(400).json({
+            messsage: "We face an error",
+            error: err.message
+        })
+    }
+}
+
+module.exports = { registerUser, loginUser, getDataFromAccessToken, refreshAccessToken, logoutProfile, deleteUserProfile, generateOtp, VerifyOtp, NewPassword };

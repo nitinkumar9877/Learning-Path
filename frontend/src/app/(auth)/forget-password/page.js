@@ -3,31 +3,28 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from "../../../stylesSheets/login.module.css";
-import { AccessTokenFromRrfreshToeken, UserLogin, UserRegister } from "../../../services/AuthUser.js"
+import { AccessTokenFromRrfreshToeken, OtpSend, UserLogin, UserRegister } from "../../../services/AuthUser.js"
 import axios from 'axios';
 import { redirect, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import GenAccessTokenFromRrfreshToeken from '@/components/GenAccessTokenFromRrfreshToeken';
 
-export default function LoginPage() {
+export const EmailSendToChild = ({ email }) => {
+    return (
+        <div>
+            <h3>The email recived from ForgetPasswordPage :</h3>
+            <p>{email}  </p>
+        </div>
+    )
+}
+
+export default function ForgetPasswordPage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
         email: ''
     });
-
-    const [showPassword, setShowPassword] = useState(false);
+    const [submittedEmail, setsubmittedEmail] = useState(false)
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        const myFun = async () => {
-            const response = await GenAccessTokenFromRrfreshToeken();
-            console.log("i got response :", response)
-            if (response) {
-                router.replace("/profile")
-            }
-        }
-        myFun()
-    }, []);
 
     if (loading) {
         return <>The Data have to check...</>
@@ -45,38 +42,33 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setsubmittedEmail(false);
 
-        const loginUser = {
-            email: formData.email,
-            password: formData.password,
+        const otpEmail = {
+            email: formData.email
         };
 
-        console.log('Login data:', {
-            email: loginUser.email
-        });
+        // console.log('Login data:', {email: otpEmail.email});
 
         const APIURL = `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_AUTH_ROUTE}generate-otp`;
         // http://localhost:5555/api/auth/generate-otp  backend api
         console.log("This is my url for fetching data : ", APIURL)
 
-        // Next step: connect your register API here.
         try {
-            const response = await UserLogin(APIURL, loginUser);
-
-            const accessToken = response.data.accessToken;
-            // alert("user Login successfully")
-            // router.push("/profile");
-            if (!accessToken) {
-                throw new Error("Access token was not returned by the server");
+            const response = await OtpSend(APIURL, otpEmail);
+            if (!response) {
+                throw new Error("otp is not send to user by the server");
             }
-            // sessionStorage.setItem("accessToken", accessToken);
-            router.push("/profile");
+            setsubmittedEmail(true);
+            sessionStorage.setItem("userEmail", JSON.stringify(otpEmail));
+            router.push("/verify-otp");
         } catch (error) {
             console.error('Error fetching employees:', error);
+            setsubmittedEmail(false);
         } finally {
             setLoading(false);
+            setsubmittedEmail(false);
         }
-
     };
 
     return (
@@ -161,36 +153,6 @@ export default function LoginPage() {
                             />
                         </div>
 
-                        {/* <div className={styles.inputGroup}>
-                            <label htmlFor="password">Password</label>
-                            <div className={styles.passwordWrapper}>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="Enter your password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                />
-
-                                <button
-                                    type="button"
-                                    className={styles.showPassword}
-                                    onClick={() => setShowPassword((prev) => !prev)}
-                                    aria-label={
-                                        showPassword ? 'Hide password' : 'Show password'
-                                    }
-                                >
-                                    {showPassword ? 'Hide' : 'Show'}
-                                </button>
-                            </div>
-                        </div> */}
-                        {/* 
-            <button type="submit" className={styles.submitButton}>
-              Create account <span>→</span>
-            </button> */}
-
                         <button type="submit" className={styles.submitButton}>
                             Generate OTP <span>→</span>
                         </button>
@@ -201,6 +163,9 @@ export default function LoginPage() {
                             <Link href="/privacy">Privacy Policy</Link>.
                         </p>
                     </form>
+                    {submittedEmail && (
+                        <EmailSendToChild email="formData.email" />
+                    )}
 
                     <div className={styles.loginPrompt}>
                         Create your new account? <Link href="/register">Create new account</Link>
@@ -217,13 +182,3 @@ export default function LoginPage() {
         </main>
     );
 }
-
-
-
-// NEXT_PUBLIC_API_URL = http://localhost:5555/
-// NEXT_PUBLIC_AUTH_ROUTE = api/auth/
-
-
-// # http://localhost:5555/api/auth/login-page
-// # http://localhost:5555/api/auth/register-user
-// # http://localhost:5555/api/auth/generate-otp

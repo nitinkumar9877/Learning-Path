@@ -84,3 +84,34 @@ export const DeleteUser = async (APIURL, accessToken) => {
     throw err;
   }
 }
+
+export const OtpSend = async (APIURL, otpEmail) => {
+  // console.log("APIURL : ", APIURL);
+  // console.log("login user details : ", otpEmail);
+  try {
+    const response = await axios.post(APIURL, otpEmail, { withCredentials: true });
+    return response;
+  } catch (err) {
+    console.log("status:", err.response?.status);
+    console.log("Error Details :", err.response?.data);
+    throw err;
+  }
+}
+
+
+export const OtpVerify = async (APIURL, payload) => {
+    console.log("APIURL:", APIURL);
+    console.log("OTP verification payload:", {
+        email: payload.email
+    });
+
+    try {
+        const response = await axios.put(APIURL, payload);
+        return response;
+    } catch (err) {
+        console.log("Status:", err.response?.status);
+        console.log("Error details:", err.response?.data);
+
+        throw err;
+    }
+};

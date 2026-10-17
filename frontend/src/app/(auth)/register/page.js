@@ -21,10 +21,6 @@ export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    if (loading) {
-        return <>The Data have to check</>
-    }
-
     const handleChange = (e) => {
         const { name, value } = e.target;
 
@@ -70,8 +66,6 @@ export default function SignupPage() {
             router.replace('/profile')
         } catch (error) {
             console.error('Error fetching employees:', error);
-        } finally {
-            setLoading(false);
         }
 
     };
@@ -196,6 +190,9 @@ export default function SignupPage() {
                                 value={formData.phonenum}
                                 onChange={handleChange}
                                 autoComplete="tel"
+                                inputMode="numeric"
+                                minLength={10}
+                                maxLength={10}
                                 required
                             />
                         </div>
@@ -211,7 +208,7 @@ export default function SignupPage() {
                                     value={formData.password}
                                     onChange={handleChange}
                                     autoComplete="new-password"
-                                    minLength={12}
+                                    minLength={8}
                                     required
                                 />
 
@@ -242,9 +239,8 @@ export default function SignupPage() {
                             />
                         </div>
 
-                        <button type="submit" className={styles.submitButton}><Link href='/profile'>
+                        <button type="submit" className={styles.submitButton}>
                             Create account <span>→</span>
-                        </Link>
                         </button>
 
                         <p className={styles.terms}>

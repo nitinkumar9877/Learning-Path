@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from "../../../stylesSheets/login.module.css";
-import { AccessTokenFromRrfreshToeken, UserLogin, UserRegister } from "../../../services/AuthUser.js"
-import axios from 'axios';
+import { AccessTokenFromRrfreshToeken, UserLogin } from "../../../services/AuthUser.js"
 import { redirect, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import GenAccessTokenFromRrfreshToeken from '@/components/GenAccessTokenFromRrfreshToeken';
