@@ -33,10 +33,11 @@ export default function SignupPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
-
+        console.log("Password :", formData.password);
+        console.log("Confirm Password :", formData.confirmPassword);
         if (formData.password !== formData.confirmPassword) {
             alert('Passwords do not match!');
+            setLoading(false);
             return;
         };
 
@@ -140,7 +141,7 @@ export default function SignupPage() {
                                     value={formData.password}
                                     onChange={handleChange}
                                     autoComplete="new-password"
-                                    minLength={12}
+                                    minLength={8}
                                     required
                                 />
 

@@ -98,7 +98,6 @@ export const OtpSend = async (APIURL, otpEmail) => {
   }
 }
 
-
 export const OtpVerify = async (APIURL, payload) => {
     console.log("APIURL:", APIURL);
     console.log("OTP verification payload:", {
@@ -106,7 +105,7 @@ export const OtpVerify = async (APIURL, payload) => {
     });
 
     try {
-        const response = await axios.put(APIURL, payload);
+        const response = await axios.post(APIURL, payload);
         return response;
     } catch (err) {
         console.log("Status:", err.response?.status);
